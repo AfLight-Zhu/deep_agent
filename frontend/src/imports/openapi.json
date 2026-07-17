@@ -1,0 +1,234 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "DeepAgents API",
+    "description": "沃华医药智能问数平台后端接口",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:8000",
+      "description": "本地开发"
+    }
+  ],
+  "paths": {
+    "/api/task": {
+      "post": {
+        "summary": "启动智能体任务",
+        "description": "提交用户问题，后台异步执行，立即返回 thread_id",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskRequest"
+              },
+              "example": {
+                "query": "帮我查一下空调销量排名前10的商品"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "任务已启动",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/upload": {
+      "post": {
+        "summary": "上传文件",
+        "description": "上传文件到当前会话目录，供 Agent 分析",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["files", "thread_id"],
+                "properties": {
+                  "files": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "binary"
+                    }
+                  },
+                  "thread_id": {
+                    "type": "string",
+                    "example": "0e278482-34ca-4ab5-a2cb-e95e73e2232a"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "上传成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/files": {
+      "get": {
+        "summary": "列出输出文件",
+        "parameters": [
+          {
+            "name": "path",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "output 目录下的绝对路径"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "文件列表",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/download": {
+      "get": {
+        "summary": "下载文件",
+        "parameters": [
+          {
+            "name": "path",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "从 /api/files 返回的 path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "文件流",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "TaskRequest": {
+        "type": "object",
+        "required": ["query"],
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "用户自然语言问题"
+          },
+          "thread_id": {
+            "type": "string",
+            "nullable": true,
+            "description": "会话ID，不传则自动生成"
+          }
+        }
+      },
+      "TaskResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "started"
+          },
+          "thread_id": {
+            "type": "string",
+            "example": "0e278482-34ca-4ab5-a2cb-e95e73e2232a"
+          }
+        }
+      },
+      "UploadResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "uploaded"
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "FileItem": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "type": { "type": "string", "example": "file" },
+          "path": { "type": "string" },
+          "size": { "type": "integer" },
+          "mtime": { "type": "number" }
+        }
+      },
+      "FileListResponse": {
+        "type": "object",
+        "properties": {
+          "files": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FileItem"
+            }
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "WebSocketMessage": {
+        "type": "object",
+        "description": "WebSocket 推送消息，连接地址 ws://127.0.0.1:8000/ws/{thread_id}",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["monitor_event", "pong"]
+          },
+          "event": {
+            "type": "string",
+            "enum": ["tool_start", "assistant_call", "session_created", "task_result"]
+          },
+          "message": { "type": "string" },
+          "data": { "type": "object" },
+          "timestamp": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  }
+}

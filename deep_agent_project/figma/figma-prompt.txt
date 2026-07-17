@@ -1,0 +1,24 @@
+请为「沃华医药智能问数平台」开发一个 React + TypeScript 前端。
+
+后端地址: http://127.0.0.1:8000
+
+页面包含:
+1. 对话区 - 用户输入问题，展示 AI 回复
+2. 进度侧栏 - WebSocket 实时显示执行状态
+3. 文件上传区 - 支持多文件上传
+4. 结果文件列表 - 展示并下载生成的 Markdown/PDF
+
+交互流程:
+1. 用户输入问题，点击发送
+2. 调用 POST /api/task，body: {"query":"用户问题"}
+3. 拿到 thread_id 后，连接 WebSocket: ws://127.0.0.1:8000/ws/{thread_id}
+4. 侧栏监听 WebSocket 消息，event 类型包括:
+   - tool_start: 工具执行中
+   - assistant_call: 子助手调用中（网络搜索/数据库/RAGFlow）
+   - task_result: 任务完成，展示 data.result
+5. 文件上传: POST /api/upload, form-data: files + thread_id
+6. 文件列表: GET /api/files?path=目录绝对路径
+7. 文件下载: GET /api/download?path=文件绝对路径
+
+设计风格: 企业级 B 端，深蓝主色，简洁专业，桌面端优先。
+对话区支持 Markdown 渲染。进度侧栏用时间线展示。
